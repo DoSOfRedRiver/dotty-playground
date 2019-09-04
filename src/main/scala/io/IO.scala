@@ -1,23 +1,28 @@
 package io
 
 import predef.StackSafeMonad
-import io.runtime.Callback
+import io.runtime._
+import scala.concurrent.ExecutionContext
 
-enum IO[A] {
+enum IO[+A] {
     case Pure(a: A)
-    case Suspend(a: () => A)
+    case Suspend(thunk: () => A)
     case Error(e: Exception)
-    case Handle(onError: IO[A], cont: IO[A])
     case Map[A, A1](prev: IO[A1], f: A1 => A) extends IO[A]
     case FlatMap[A, A1](prev: IO[A1], f: A1 => IO[A]) extends IO[A]
     case Async[A](cont: Callback[A] => IO[Unit]) extends IO[A]
+    case Shift(sc: Scheduler)
+    case Fork(cont: IO[A]) extends IO[Fiber[A]]
 
-    def handleErrorWith(onError: IO[A]): IO[A] = Handle(onError, this)
-}
+    def handleErrorWith[B >: A](onError: Exception => IO[B]): IO[B] = {
+      FlatMap(this, new ErrorHandler(Pure.apply, onError))
+    }
 
-trait Fiber[A] {
-  def join: IO[A]
-  def cancel: IO[Unit]
+    def handleError[B >: A](onError: Exception => B): IO[B] = {
+      FlatMap(this, new ErrorHandler(Pure.apply, onError andThen Pure.apply))
+    }
+
+    def fork: IO[Fiber[A]] = Fork(this)
 }
 
 object IO {
@@ -30,10 +35,13 @@ object IO {
   def async[A](cont: Callback[A] => Unit): IO[A] =
     asyncF[A](cb => suspend(cont(cb)))
 
-  def start[A](ia: IO[A]): Fiber[A] = ???
-
   def raise[A](e: Exception): IO[A] =
     IO.suspend(throw e)
+
+  def shift(sc: Scheduler): IO[Unit] = 
+    IO.Shift(sc)
+
+  def unit: IO[Unit] = Pure(())
 
   delegate for StackSafeMonad[IO] {
     def (a: A) pure[A]: IO[A] = IO.Pure(a)

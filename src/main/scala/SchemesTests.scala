@@ -1,6 +1,6 @@
 package mains
 
-object SchemesTests1 extends App {
+object SchemesTests extends App {
   import schemes._
   import delegate schemes._
 
@@ -15,6 +15,16 @@ object SchemesTests1 extends App {
   def wtf: Int => Int = {
     genN[List] andThen sum[List]
   }
+
+  def facHylo: Int => Int = 
+    hylo[B = Int](_) (
+      1,
+      (a, c) => a * c,
+      a => (a, a - 1),
+      _ == 0
+    )
+
+  println(s"facHylo 5 = ${facHylo(5)}")
 
   def mapCata[A,B](la: List[A], f: A => B): List[B] = {
     la.foldr(List.empty) { case (a, bs) => f(a) :: bs }
@@ -74,22 +84,12 @@ object SchemesTests1 extends App {
     else Num.Succ((n - 1).toNum)
   }
 
-  def facHylo: Int => Int = 
-    hylo[B = Int](_) (
-      1,
-      (a, c) => a * c,
-      a => (a, a - 1),
-      _ == 0
-    )
-
-  println(s"facHylo 5 = ${facHylo(5)}")
-
-
   def (num: Num) paraNum[B](z: B)(f: (Num, B) => B): B = num match {
     case Num.Zero => z
     case Num.Succ(prev) =>
       f(prev, prev.paraNum(z)(f))
   }
+
 
   def paraFac(n: Num): Num = {
     println(s"para: $n ${Num.One}")

@@ -1,10 +1,11 @@
 package mains
 
-import io.runtime.FreeIORuntimeWithErrorHandling._
+import scala.io.StdIn.readLine
+import io.runtime.IORuntime
+import io.runtime.Scheduler
+import io._
 import predef._
 import delegate predef._
-import io._
-import scala.io.StdIn.readLine
 
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,10 +41,10 @@ object IOTests extends App {
     "I come from the Future!"
   }
 
-  val asyncTest: IO[Unit] = 
+  val subAsync = 
     for {
-      _ <- printLn[IO]("Reading something asynchronously")
-      _ <- IO.suspend(throw new RuntimeException("Boom!"))
+      + <- printLn("subAsync")
+      _ <- printLn(Thread.currentThread.getName)
       r <- IO.async[String] { clb =>
         import scala.util.{Success, Failure}
 
@@ -54,8 +55,51 @@ object IOTests extends App {
             clb(Left(error))
         }
       }
-      _ <- printLn(s"Got result from async: $r")
+
+      _ <- printLn("After async")
+      _ <- printLn(Thread.currentThread.getName)
+
+      //_ <- IO.suspend(throw new RuntimeException("Boom!"))
     } yield ()
 
-  asyncTest.handleErrorWith(printLn("An error occured")).runUnsafe
+  
+  val global = scala.concurrent.ExecutionContext.Implicits.global
+  val globalSc: Scheduler = Scheduler.fromEC(global)
+  implicit val sc: Scheduler = Scheduler.default
+  implicit val runtime: IORuntime = new IORuntime
+  
+  val asyncTest: IO[String] = 
+    for {
+      _ <- printLn[IO]("Reading something asynchronously")
+      _ <- printLn(Thread.currentThread.getName)
+      _ <- IO.shift(globalSc)
+      r <- subAsync
+      _ <- printLn("Third")
+      _ <- printLn(Thread.currentThread.getName)
+    } yield ""
+
+  def printTimes(msg: String, times: Int): IO[Unit] = {
+    if (times > 0)
+      printLn(s"$times: $msg") >> IO.suspend(Thread.sleep(1000)) >> printTimes(msg, times - 1)
+    else
+      IO.unit
+  }
+
+  val forkTest: IO[Unit] =
+    for {
+      _   <- IO.shift(globalSc)
+      f1  <- printTimes("First", 10).fork
+      _   <- printLn("Fire first")
+      f2  <- printTimes("Second", 10).fork
+      _   <- printLn("Fire second")
+      f3  <- printTimes("Third", 10).fork
+      _   <- printLn("Fire third")
+      _   <- f1.join
+      _   <- f2.join
+      _   <- f3.join
+      _   <- printLn("Done")
+    } yield ()
+
+  forkTest
+    .runUnsafe
 }

@@ -5,6 +5,7 @@ import free._
 import free.Free.defer
 import predef._
 import io.runtime.BlockingCallback
+import scala.concurrent.ExecutionContext
 
 import delegate free._
 import delegate io._
@@ -57,7 +58,7 @@ object FreeIORuntime extends Runtime[IO] {
       case IO.Async(cont) =>
         val clb = new BlockingCallback[A]
         loop1(
-          cont(clb) >> IO.suspend(clb.value)
+          cont.asInstanceOf[BlockingCallback[A] => IO[Unit]](clb) >> IO.suspend(clb.value)
         )
     }
   }
@@ -125,6 +126,7 @@ object FreeIORuntimeWithErrorHandling extends Runtime[IO] {
               loop(IO.Error(e))
             case IO.Suspend(c) =>
               loop(IO.Suspend(c.asInstanceOf[Function0[A]]))
+            case _ => ???
           }
         )
       case IO.FlatMap(prev, f) =>
@@ -135,17 +137,13 @@ object FreeIORuntimeWithErrorHandling extends Runtime[IO] {
             loop(IO.Suspend(c.asInstanceOf[Function0[A]]))
           case IO.Error(e) =>
             loop(IO.Error(e))
+          case _ => ???
         })
       case IO.Async(cont) =>
         val clb = new BlockingCallback[A]
         loop(
-          cont(clb) >> IO.suspend(clb.value)
+          cont.asInstanceOf[BlockingCallback[A] => IO[Unit]](clb) >> IO.suspend(clb.value)
         )
-      case IO.Handle(onError, cont) =>
-        println("Handle")
-        loop(cont) flatMap { smt =>
-          loop(onError)
-        }
     }
   }
 }

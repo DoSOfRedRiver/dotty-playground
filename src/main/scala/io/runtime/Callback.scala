@@ -1,6 +1,6 @@
 package io.runtime
 
-import java.util.concurrent.locks.AbstractQueuedSynchronizer
+import scala.concurrent.ExecutionContext
 
 trait Callback[A] extends (Either[Exception, A] => Unit) {
   def onSuccess(value: A): Unit
@@ -12,16 +12,6 @@ trait Callback[A] extends (Either[Exception, A] => Unit) {
       case Right(a) => onSuccess(a)
       case Left(e) => onError(e)
     }
-}
-
-final class OneShotLatch extends AbstractQueuedSynchronizer {
-  override protected def tryAcquireShared(ignored: Int): Int =
-    if (getState != 0) 1 else -1
-
-  override protected def tryReleaseShared(ignore: Int): Boolean = {
-    setState(1)
-    true
-  }
 }
 
 class BlockingCallback[A] extends Callback[A] {
@@ -38,6 +28,17 @@ class BlockingCallback[A] extends Callback[A] {
     error match {
       case null => success
       case e => throw e
+    }
+  }
+
+  def valueEither: Either[Exception, A] = {
+    blocking(latch.acquireSharedInterruptibly(1))
+
+    error match {
+      case null => 
+        Right(success)
+      case e => 
+        Left(e)
     }
   }
 
