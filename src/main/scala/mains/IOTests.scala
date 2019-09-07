@@ -100,6 +100,6 @@ object IOTests extends App {
       _   <- printLn("Done")
     } yield ()
 
-  forkTest
+  asyncTest
     .runUnsafe
 }

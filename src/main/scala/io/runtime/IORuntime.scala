@@ -15,6 +15,7 @@ class IORuntime given Scheduler extends Runtime[IO] {
   def (fa: IO[A]) runUnsafe[A]: A = {
     val clb = new BlockingCallback[A]
 
+    //TODO this is not thread-safe
     val binds: CallStack = ArrayStack()
 
     the[Scheduler].execute { () =>
