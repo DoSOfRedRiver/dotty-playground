@@ -18,3 +18,19 @@ delegate for Monad[Function0] {
 
   def (a: A) pure[A]: Function0[A] = () => a
 }
+
+delegate for Monad[List] {
+  def (fa: List[A]) flatMap[A,B] (f: A => List[B]): List[B] = {
+    fa.flatMap(f)
+  }
+
+  def (a: A) pure[A]: List[A] = List(a)
+}
+
+delegate for Monad[Option] {
+  def (fa: Option[A]) flatMap[A,B] (f: A => Option[B]): Option[B] = {
+    fa.flatMap(f)
+  }
+
+  def (a: A) pure[A]: Option[A] = Some(a)
+}
