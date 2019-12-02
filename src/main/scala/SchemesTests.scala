@@ -2,7 +2,7 @@ package mains
 
 object SchemesTests extends App {
   import schemes._
-  import delegate schemes._
+  import schemes.given
 
   def genN[F[_]: Ana](n: Int): F[Int] = {
     n.unfold(_ == 0,  b => (b, b-1))
@@ -44,7 +44,7 @@ object SchemesTests extends App {
 
   println(s"MapAna\n\t$l1\n\t${mapAna(l1, _ + 1)}")
 
-  def (l: List[A]) zipAna[A, B] (r: List[B]): List[(A,B)] = {
+  def[A, B] (l: List[A]) zipAna (r: List[B]): List[(A,B)] = {
     //compiler hangs if inline
     val tup: (List[A], List[B]) = (l, r)
     (tup).unfold (
@@ -84,7 +84,7 @@ object SchemesTests extends App {
     else Num.Succ((n - 1).toNum)
   }
 
-  def (num: Num) paraNum[B](z: B)(f: (Num, B) => B): B = num match {
+  def[B] (num: Num) paraNum (z: B)(f: (Num, B) => B): B = num match {
     case Num.Zero => z
     case Num.Succ(prev) =>
       f(prev, prev.paraNum(z)(f))

@@ -4,21 +4,21 @@ import io.IO
 import io.runtime.BlockingCallback
 import io.runtime.StackFrame
 
-class IORuntime given Scheduler extends Runtime[IO] {
+class IORuntime(given Scheduler) extends Runtime[IO] {
   import scala.collection.mutable.ArrayStack
 
   type Bind = Any => IO[Any]
   type CallStack = ArrayStack[Bind]
 
-  var sch = the[Scheduler]
+  var sch = summon[Scheduler]
 
-  def (fa: IO[A]) runUnsafe[A]: A = {
+  def[A] (fa: IO[A]) runUnsafe: A = {
     val clb = new BlockingCallback[A]
 
     //TODO this is not thread-safe
     val binds: CallStack = ArrayStack()
 
-    the[Scheduler].execute { () =>
+    summon[Scheduler].execute { () =>
       clb(Right(runLoop(fa, binds)))
     }
 
@@ -36,7 +36,7 @@ class IORuntime given Scheduler extends Runtime[IO] {
       hasResult = true
     }
 
-    do {
+    while(true) {
       current match {
         case IO.Pure(a) =>
           setResult(a)
@@ -92,7 +92,7 @@ class IORuntime given Scheduler extends Runtime[IO] {
           result = null
         }
       }
-    } while (true)
+    }
 
     throw new IllegalStateException("out of loop")
   }
@@ -133,12 +133,14 @@ class IORuntime given Scheduler extends Runtime[IO] {
     }
 
   def findErrorHandler(cs: CallStack): ErrorHandler[Any, IO[Any]] = {
-    do {
+    while {
       val bind = cs.pop()
       if (bind.isInstanceOf[ErrorHandler[_, _]]) {
         return bind.asInstanceOf[ErrorHandler[Any, IO[Any]]]
       }
-    } while (cs.nonEmpty)
+
+      cs.nonEmpty
+    } do ()
 
     null
   }

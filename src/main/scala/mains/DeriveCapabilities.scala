@@ -1,12 +1,12 @@
 package mains
 
 import predef._
-import delegate predef._
+import predef.given
 import io.IO
 import io.runtime.Scheduler
 import io.runtime.IORuntime
 
-object Test {
+object Test1 {
   type W[A, X] = A & X
 
   type EffI[F[_]] = Monad[F]
@@ -25,11 +25,11 @@ object Test {
     def name: String
   }
 
-  given StringTag as Tag[String] {
+  given StringTag: Tag[String] {
     def name: String = "String"    
   }
 
-  given IntTag as Tag[Int] {
+  given IntTag: Tag[Int] {
     def name: String = "Int"
   }
 
@@ -38,7 +38,7 @@ object Test {
     def to(a: A): B
   }
 
-  given [A, B, C <: A | B] as Iso[C, This[A, B][C]] {
+  given [A, B, C <: A | B]: Iso[C, This[A, B][C]] {
     def from(next: This[A, B][C]): C = {
       next.asInstanceOf[C]
     }
@@ -83,7 +83,7 @@ object Test {
 
 opaque type Eff[F[_]] = Monad[F] with Console[F]
 
-implicit def deriveCap[F[_]] given (m: Monad[F], c: Console[F]): Eff[F] = new Monad[F] with Console[F] {
+implicit def deriveCap[F[_]](given m: Monad[F], c: Console[F]): Eff[F] = new Monad[F] with Console[F] {
   export m._
   export c._
 }
@@ -110,14 +110,42 @@ def doo[F[_]: Eff]: F[Unit] = {
   } yield ()
 }
 
+trait One {
+  type M1[A]
+
+  type M[A] = A match {
+    case String => List[Char]
+    case _ => M1[A]
+  }
+}
+
+trait Two extends One {
+  type M1[A] = A match {
+    case Int => Array[Boolean]
+  }
+}
+
+trait Three extends Two {
+  //type M2[_[_] <: M1]
+  type M3[A] <: M[A]
+}
+
+trait Echo[A] {
+  def echo: Unit
+}
 
 object DeriveCapabilities extends App {
   implicit val sc: Scheduler = Scheduler.default
   implicit val runtime: IORuntime = new IORuntime
 
-  import Test._
+  import Test1._
   //doo[IO].runUnsafe
   val f = new TestJok[Int, String].next("sd")
-  println(f(4))
-  
+  //println(f(4))
+  implicit val eS: Echo[List[Char]] = new Echo[List[Char]] {
+    def echo = println("List of chars")
+  }
+  implicit val eI: Echo[Array[Boolean]] = new Echo[Array[Boolean]] {
+    def echo = println("Array of bools")
+  }
 }

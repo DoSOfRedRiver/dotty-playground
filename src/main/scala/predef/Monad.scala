@@ -1,45 +1,25 @@
 package predef
 
 trait Functor[F[_]] extends FunctorSyntax[F] {
-  def (fa: F[A]) map[A,B] (f: A => B): F[B]
+  def[A,B] (fa: F[A]) map (f: A => B): F[B]
 }
 
 trait Applicative[F[_]] extends Functor[F] {
-  def (fa: F[A]) ap[A,B] (fab: F[A => B]): F[B]
-  def (a: A) pure[A]: F[A]
+  def[A,B] (fa: F[A]) ap (fab: F[A => B]): F[B]
+  def[A] (a: A) pure: F[A]
 }
 
 trait Monad[F[_]] extends Applicative[F] with MonadSyntax[F] {
-  def (fa: F[A]) flatMap[A,B] (f: A => F[B]): F[B]
+  def[A,B] (fa: F[A]) flatMap (f: A => F[B]): F[B]
 
-  def (fa: F[A]) ap[A,B] (fab: F[A => B]): F[B] = {
+  def[A,B] (fa: F[A]) ap (fab: F[A => B]): F[B] = {
       for {
         a <- fa
         f <- fab
       } yield f(a)
     }
 
-  def (fa: F[A]) map[A,B] (f: A => B): F[B] = fa flatMap (f andThen pure)
-}
-
-trait MonadSyntax[F[_]] {
-  self: Monad[F] =>
-
-  def (ffa: F[F[A]]) flatten[A]: F[A] = ffa.flatMap(x => x)
-  
-  def (fa: F[A]) >> [A,B](fb: => F[B]): F[B] = {
-    fa flatMap (_ => fb)
-  }
-
-  def (a: A) ret [A]: F[A] = {
-    self.pure(a)
-  }
-}
-
-trait FunctorSyntax[F[_]] {
-  self: Functor[F] =>
-  
-  def (fa: F[A]) void[A]: F[Unit] = fa map (_ => ())
+  def[A,B] (fa: F[A]) map (f: A => B): F[B] = fa flatMap (f andThen pure)
 }
 
 trait TailRec[F[_]] {
@@ -53,10 +33,34 @@ trait StackSafeMonad[F[_]] extends TailRec[F] with Monad[F] {
   }
 }
 
-delegate StackSafeListMonad for StackSafeMonad[List] {
-  def (fa: List[A]) flatMap[A,B] (f: A => List[B]): List[B] = {
+given StackSafeListMonad: StackSafeMonad[List] {
+  def[A,B] (fa: List[A]) flatMap (f: A => List[B]): List[B] = {
     fa.flatMap(f)
   }
 
-  def (a: A) pure[A]: List[A] = List(a)
+  def[A] (a: A) pure: List[A] = List(a)
+}
+
+
+
+trait MonadSyntax[F[_]] {
+  self: Monad[F] =>
+
+  def[A] (ffa: F[F[A]]) flatten: F[A] = ffa.flatMap(x => x)
+  
+  def[A,B] (fa: F[A]) >> (fb: => F[B]): F[B] = {
+    fa flatMap (_ => fb)
+  }
+
+  def[A] (a: A) ret: F[A] = {
+    self.pure(a)
+  }
+}
+
+trait FunctorSyntax[F[_]] {
+  self: Functor[F] =>
+  
+  def[A] (fa: F[A]) void: F[Unit] = fa map (_ => ())
+
+  def[A,B] (fa: F[A]) as (b: B): F[B] = fa map (_ => b)
 }

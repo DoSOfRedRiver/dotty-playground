@@ -11,7 +11,7 @@ enum Free[F[_], A] {
 
   import Free.roll
 
-  def resume given Functor[F]: Either[F[Free[F, A]], A] = this match {
+  def resume(given Functor[F]): Either[F[Free[F, A]], A] = this match {
     case Pure(a) =>
       Right(a)
     case Suspend(cont) =>
@@ -27,7 +27,7 @@ enum Free[F[_], A] {
       }
   }
 
-  def eval(f: F[Free[F, A]] => Free[F, A]) given Functor[F]: A = {
+  def eval(f: F[Free[F, A]] => Free[F, A])(given Functor[F]): A = {
     @tailrec
     def loop(free: Free[F, A]): A = {
       free.resume match {
@@ -48,7 +48,7 @@ enum Free[F[_], A] {
     case x => x
   }
 
-  def zip[B](fb: Free[F, B]) given Functor[F]: Free[F, (A,B)] = {
+  def zip[B](fb: Free[F, B])(given Functor[F]): Free[F, (A,B)] = {
     (resume, fb.resume) match {
       case (Left(fa), Left(fb)) =>
         fa.roll zip fb.roll
@@ -62,7 +62,7 @@ enum Free[F[_], A] {
   }
 
   def foldMap[M[_]: Applicative: TailRec](f: [X] => F[X] => M[X]): M[A] = {
-    the[TailRec[M]].tailRecM(this, _.step match {
+    summon[TailRec[M]].tailRecM(this, _.step match {
       case Pure(a) => Right(a).pure
       case Suspend(cont) =>
         f(cont) map Right.apply
@@ -72,11 +72,11 @@ enum Free[F[_], A] {
   }
 }
 
-delegate FreeMonad[F[_]] for Monad[[X] =>> Free[F, X]] {
-  def (fa: Free[F, A]) flatMap[A,B] (f: A => Free[F, B]): Free[F, B] =
+given FreeMonad[F[_]]: Monad[[X] =>> Free[F, X]] {
+  def[A,B] (fa: Free[F, A]) flatMap (f: A => Free[F, B]): Free[F, B] =
     Free.FlatMap(fa, f)
 
-  def (a: A) pure[A] = Free.Pure(a)
+  def[A] (a: A) pure = Free.Pure(a)
 }
 
 object Free {
@@ -84,11 +84,11 @@ object Free {
     Suspend(fa)
   }
 
-  def (value: F[Free[F, A]]) roll[F[_], A]: Free[F, A] =
+  def[F[_], A] (value: F[Free[F, A]]) roll: Free[F, A] =
     liftF(value).flatMap(identity)
 
   def defer[F[_], A](a: => Free[F, A]): Free[F, A] = {
     //This is temporary to avoid bug in the compiler
-    (the[Monad[[X] =>> Free[F, X]]].pure(())) flatMap (_ => a)
+    (summon[Monad[[X] =>> Free[F, X]]].pure(())) flatMap (_ => a)
   }
 }

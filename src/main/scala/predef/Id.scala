@@ -4,7 +4,7 @@ import predef.Monad
 
 type Id[A] = A
 
-delegate IdMonad for Monad[Id] {
-  def (a: A) pure[A]: Id[A] = a
-  def (a: Id[A]) flatMap[A,B](f: A => Id[B]): Id[B] = f(a)
+given IdMonad: Monad[Id] {
+  def[A] (a: A) pure: Id[A] = a
+  def[A,B] (a: Id[A]) flatMap (f: A => Id[B]): Id[B] = f(a)
 }

@@ -4,9 +4,9 @@ import free.Free
 import free.Free._
 import predef.Const
 import predef.TailRec
-import delegate io._
-import delegate free._
-import delegate predef._
+import io.given
+import free.given
+import predef.given
 import java.util.concurrent.atomic.AtomicInteger
 
 object Main extends App {

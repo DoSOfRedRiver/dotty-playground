@@ -1,15 +1,15 @@
 package schemes
 
 trait Cata[F[_]] {
-  def (fa: F[A]) foldr[A, B] (z: B)(f: (A, B) => B): B
+  def[A, B] (fa: F[A]) foldr (z: B)(f: (A, B) => B): B
 }
 
 trait Ana[F[_]] {
-  def (b: B) unfold[A, B](p: B => Boolean, g: B => (A,B)): F[A]
+  def[A, B] (b: B) unfold (p: B => Boolean, g: B => (A,B)): F[A]
 }
 
 trait Para[F[_]] {
-  def (fa: F[A]) para[A, B](z: B, f: (A, B) => B): B
+  def[A, B] (fa: F[A]) para (z: B, f: (A, B) => B): B
 }
 
 def hylo[A, B, C](a: A)(z: C, f: (B, C) => C, g: A => (B, A), p: A => Boolean): C = {
@@ -20,8 +20,8 @@ def hylo[A, B, C](a: A)(z: C, f: (B, C) => C, g: A => (B, A), p: A => Boolean): 
   }
 }
 
-delegate for Cata[List] {
-  def (fa: List[A]) foldr[A, B] (z: B)(f: (A, B) => B): B = {
+given Cata[List] {
+  def[A, B] (fa: List[A]) foldr (z: B)(f: (A, B) => B): B = {
     fa match {
       case Nil => z
       case a :: as =>
@@ -30,8 +30,8 @@ delegate for Cata[List] {
   }
 }
 
-delegate for Ana[List] {
-  def (b: B) unfold[A, B](p: B => Boolean, g: B => (A,B)): List[A] = {
+given Ana[List] {
+  def[A, B] (b: B) unfold (p: B => Boolean, g: B => (A,B)): List[A] = {
     if (p(b)) Nil
     else {
       val (a, b1) = g(b)
@@ -40,8 +40,8 @@ delegate for Ana[List] {
   }
 }
 
-delegate for Para[List] {
-  def (fa: List[A]) para[A, B](z: B, f: (A, B) => B): B = {
+given Para[List] {
+  def[A, B] (fa: List[A]) para (z: B, f: (A, B) => B): B = {
     fa match {
       case Nil => z
       case a :: as =>

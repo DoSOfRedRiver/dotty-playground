@@ -1,7 +1,7 @@
 package mains
 
 object FreeTests extends App {
-  import delegate free._
+  import free.given
   import predef.Monad
   import free.Free
   import io.IO

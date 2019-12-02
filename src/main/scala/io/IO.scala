@@ -43,10 +43,10 @@ object IO {
 
   def unit: IO[Unit] = Pure(())
 
-  delegate for StackSafeMonad[IO] {
-    def (a: A) pure[A]: IO[A] = IO.Pure(a)
+  given StackSafeMonad[IO] {
+    def[A] (a: A) pure: IO[A] = IO.Pure(a)
 
-    override def (fa: IO[A]) map[A,B] (f: A => B): IO[B] = {
+    override def[A,B] (fa: IO[A]) map (f: A => B): IO[B] = {
       fa match {
         case Map(p, g) =>
           Map(p, g andThen f)
@@ -54,8 +54,18 @@ object IO {
       }
     }
 
-    def (fa: IO[A]) flatMap[A,B] (f: A => IO[B]): IO[B] = {
+    def[A,B] (fa: IO[A]) flatMap (f: A => IO[B]): IO[B] = {
       FlatMap(fa, f)
+    }
+  }
+
+  given predef.Suspend[IO] {
+    def[A] (a: => A) suspend: IO[A] = IO.suspend(a)
+  }
+
+  given predef.Raise[IO] {
+    def[A] (e: Exception) raise: IO[A] = {
+      IO.raise(e)
     }
   }
 }

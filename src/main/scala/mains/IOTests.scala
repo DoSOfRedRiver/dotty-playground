@@ -5,7 +5,7 @@ import io.runtime.IORuntime
 import io.runtime.Scheduler
 import io._
 import predef._
-import delegate predef._
+import predef.given
 
 
 import scala.concurrent.ExecutionContext.Implicits.global

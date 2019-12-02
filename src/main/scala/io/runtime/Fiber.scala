@@ -2,8 +2,8 @@ package io.runtime
 
 import io.IO
 import predef._
-import delegate io.IO._
-import delegate predef._
+import io.IO.given
+import predef.given
 
 trait Fiber[+A] {
   def join: IO[A]
@@ -19,7 +19,7 @@ object Fiber {
   }
 }
 
-def (ia: IO[A]) fork[A]: IO[Fiber[A]] = {
+def[A] (ia: IO[A]) fork: IO[Fiber[A]] = {
   ia match {
     case IO.Pure | IO.Error =>
       IO.Pure(Fiber(ia, IO.unit))

@@ -1,4 +1,4 @@
-val dottyVersion = "0.17.0-RC1"
+val dottyVersion = "0.20.0-RC1"
 
 lazy val root = project
   .enablePlugins(GraalVMNativeImagePlugin)
@@ -7,7 +7,7 @@ lazy val root = project
     name := "dotty-simple",
     version := "0.1.0",
 
-    mainClass in Compile := Some("mains.IOTests"),
+    mainClass in Compile := Some("mains.StreamsTests"),
 
     scalaVersion := dottyVersion,
 

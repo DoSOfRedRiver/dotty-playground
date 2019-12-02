@@ -7,13 +7,12 @@ import predef._
 import io.runtime.BlockingCallback
 import scala.concurrent.ExecutionContext
 
-import delegate free._
-import delegate io._
-import delegate predef._
-import delegate predef.Functor
+import free.given
+import io.given
+import predef.given
 
 trait Runtime[F[_]] {
-  def (fa: F[A]) runUnsafe[A]: A
+  def[A] (fa: F[A]) runUnsafe: A
 }
 
 /*object TrampolineIORuntime extends Runtime[IO] {
@@ -39,7 +38,7 @@ trait Runtime[F[_]] {
 }*/
 
 object FreeIORuntime extends Runtime[IO] {
-  def (fa: IO[A]) runUnsafe[A]: A = {
+  def[A] (fa: IO[A]) runUnsafe: A = {
     loop1(fa).eval(_())
   }
 
@@ -67,7 +66,7 @@ object FreeIORuntime extends Runtime[IO] {
 object FreeIORuntimeWithErrorHandling extends Runtime[IO] {
   type Run[A] = EitherT[Function0, Exception, A]
 
-  def (fa: IO[A]) runUnsafe[A]: A = {
+  def[A] (fa: IO[A]) runUnsafe: A = {
     eval(loop(fa)) match {
       case IO.Error(e) =>
         throw e
